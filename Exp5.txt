@@ -1,0 +1,64 @@
+import numpy as np
+
+# ==========================================
+# 1. K-NN ALGORITHM FROM SCRATCH
+# ==========================================
+class KNNFromScratch:
+    def __init__(self, k=3):
+        self.k = k
+
+    def fit(self, X, y):
+        self.X_train = np.array(X)
+        self.y_train = np.array(y)
+
+    def _euclidean_distance(self, x1, x2):
+        return np.sqrt(np.sum((x1 - x2) ** 2))
+
+    def predict(self, X):
+        X = np.array(X)
+        predictions = [self._predict_single(x) for x in X]
+        return np.array(predictions)
+
+    def _predict_single(self, x):
+        # Calculate distances between x and all training samples
+        distances = [self._euclidean_distance(x, x_train) for x_train in self.X_train]
+        
+        # Get indices of the K nearest neighbors
+        k_indices = np.argsort(distances)[:self.k]
+        
+        # Get the labels of the K nearest neighbors
+        k_nearest_labels = [self.y_train[i] for i in k_indices]
+        
+        # Return the most common class label (majority vote)
+        labels, counts = np.unique(k_nearest_labels, return_counts=True)
+        return labels[np.argmax(counts)]
+
+
+# ==========================================
+# 2. DEMONSTRATION & TESTING
+# ==========================================
+if __name__ == "__main__":
+    # Sample Dataset: [Height (cm), Weight (kg)] -> Class Label
+    X_train = [[160, 45], [155, 40], [175, 70], [180, 75], [150, 38], [170, 68]]
+    y_train = ['Underweight', 'Underweight', 'Normal', 'Normal', 'Underweight', 'Normal']
+
+    # New Test Sample: [Height: 162 cm, Weight: 48 kg]
+    X_test = [[162, 48], [178, 72]]
+
+    # --- Test Scratch Implementation ---
+    knn_scratch = KNNFromScratch(k=3)
+    knn_scratch.fit(X_train, y_train)
+    predictions_scratch = knn_scratch.predict(X_test)
+
+    print("--- K-NEAREST NEIGHBOURS (K-NN) RESULTS ---")
+    for sample, pred in zip(X_test, predictions_scratch):
+        print(f"Sample {sample}  -->  Predicted Class: {pred}")
+
+    # --- Verification using Scikit-Learn ---
+    from sklearn.neighbors import KNeighborsClassifier
+    knn_sklearn = KNeighborsClassifier(n_neighbors=3)
+    knn_sklearn.fit(X_train, y_train)
+    predictions_sklearn = knn_sklearn.predict(X_test)
+
+    print("-" * 50)
+    print(f"Scikit-Learn Verification Predictions: {predictions_sklearn}")

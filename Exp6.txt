@@ -1,0 +1,23 @@
+import numpy as np
+from sklearn.naive_bayes import GaussianNB
+from sklearn.metrics import accuracy_score, confusion_matrix
+
+# 1. Sample Dataset: [Feature_1, Feature_2] -> Target Label (0 or 1)
+X = np.array([[1, 2], [2, 3], [3, 4], [8, 9], [9, 10], [10, 11]])
+y = np.array([0, 0, 0, 1, 1, 1])
+
+# 2. Initialize and train Gaussian Naïve Bayes classifier
+model = GaussianNB()
+model.fit(X, y)
+
+# 3. Predict on training data
+y_pred = model.predict(X)
+
+# 4. Evaluate performance
+accuracy = accuracy_score(y, y_pred)
+cm = confusion_matrix(y, y_pred)
+
+print(f"Predictions      : {y_pred}")
+print(f"Accuracy Score   : {accuracy * 100:.2f}%")
+print("Confusion Matrix :")
+print(cm)

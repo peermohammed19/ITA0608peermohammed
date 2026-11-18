@@ -1,0 +1,66 @@
+import csv
+
+# 1. CREATE A SAMPLE CSV FILE AUTOMATICALLY
+csv_data = [
+    ["Sky", "Temp", "Humidity", "Wind", "Water", "Forecast", "EnjoySport"],
+    ["Sunny", "Warm", "Normal", "Strong", "Warm", "Same", "Yes"],
+    ["Sunny", "Warm", "High", "Strong", "Warm", "Same", "Yes"],
+    ["Rainy", "Cold", "High", "Strong", "Warm", "Change", "No"],
+    ["Sunny", "Warm", "High", "Strong", "Cool", "Change", "Yes"]
+]
+
+with open("training_data.csv", "w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerows(csv_data)
+
+
+# 2. CANDIDATE-ELIMINATION ALGORITHM
+def candidate_elimination(filename):
+    with open(filename, "r") as file:
+        reader = list(csv.reader(file))
+        concepts = [row[:-1] for row in reader[1:]]
+        target = [row[-1] for row in reader[1:]]
+
+    num_attributes = len(concepts[0])
+
+    # Initialize Specific (S) and General (G) Hypotheses
+    specific_h = ['0'] * num_attributes
+    general_h = [['?'] * num_attributes for _ in range(num_attributes)]
+
+    print(f"Initial Specific Boundary (S0) : {specific_h}")
+    print(f"Initial General Boundary (G0)  : {general_h}\n" + "-" * 60)
+
+    for i, instance in enumerate(concepts):
+        if target[i].strip().lower() in ['yes', '1', 'positive']:
+            # First positive instance initializes specific_h
+            if specific_h == ['0'] * num_attributes:
+                specific_h = list(instance)
+            else:
+                for j in range(num_attributes):
+                    if instance[j] != specific_h[j]:
+                        specific_h[j] = '?'
+                        general_h[j][j] = '?'
+
+        elif target[i].strip().lower() in ['no', '0', 'negative']:
+            for j in range(num_attributes):
+                if instance[j] != specific_h[j]:
+                    general_h[j][j] = specific_h[j]
+                else:
+                    general_h[j][j] = '?'
+
+        # Filter out general hypotheses that remain fully unconstrained
+        gh_filtered = [g for g in general_h if g != ['?'] * num_attributes]
+
+        print(f"Instance {i+1} ({target[i]}): {instance}")
+        print(f"S{i+1}: {specific_h}")
+        print(f"G{i+1}: {gh_filtered}\n" + "-" * 60)
+
+    return specific_h, gh_filtered
+
+
+# 3. EXECUTE ALGORITHM
+S_final, G_final = candidate_elimination("training_data.csv")
+
+print("\n--- FINAL RESULTS ---")
+print("Final Most Specific Boundary (S):", S_final)
+print("Final Most General Boundary (G) :", G_final)

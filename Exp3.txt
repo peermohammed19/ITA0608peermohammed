@@ -1,0 +1,109 @@
+import numpy as np
+import math
+
+# 1. SAMPLE DATASET (PlayTennis)
+# Attributes: [Outlook, Temperature, Humidity, Wind] -> Target: PlayTennis
+dataset = [
+    ['Sunny',    'Hot',  'High',   'Weak',   'No'],
+    ['Sunny',    'Hot',  'High',   'Strong', 'No'],
+    ['Overcast', 'Hot',  'High',   'Weak',   'Yes'],
+    ['Rain',     'Mild', 'High',   'Weak',   'Yes'],
+    ['Rain',     'Cool', 'Normal', 'Weak',   'Yes'],
+    ['Rain',     'Cool', 'Normal', 'Strong', 'No'],
+    ['Overcast', 'Cool', 'Normal', 'Strong', 'Yes'],
+    ['Sunny',    'Mild', 'High',   'Weak',   'No'],
+    ['Sunny',    'Cool', 'Normal', 'Weak',   'Yes'],
+    ['Rain',     'Mild', 'Normal', 'Weak',   'Yes'],
+    ['Sunny',    'Mild', 'Normal', 'Strong', 'Yes'],
+    ['Overcast', 'Mild', 'High',   'Strong', 'Yes'],
+    ['Overcast', 'Hot',  'Normal', 'Weak',   'Yes'],
+    ['Rain',     'Mild', 'High',   'Strong', 'No']
+]
+
+features = ['Outlook', 'Temperature', 'Humidity', 'Wind']
+
+# 2. HELPER FUNCTIONS: ENTROPY & INFORMATION GAIN
+def calculate_entropy(target_col):
+    elements, counts = np.unique(target_col, return_counts=True)
+    entropy = 0
+    for count in counts:
+        p = count / len(target_col)
+        entropy -= p * math.log2(p)
+    return entropy
+
+def calculate_info_gain(data, feature_index):
+    total_entropy = calculate_entropy([row[-1] for row in data])
+    vals, counts = np.unique([row[feature_index] for row in data], return_counts=True)
+    
+    subset_entropy = 0
+    for i in range(len(vals)):
+        subset = [row for row in data if row[feature_index] == vals[i]]
+        p = counts[i] / sum(counts)
+        subset_entropy += p * calculate_entropy([row[-1] for row in subset])
+        
+    return total_entropy - subset_entropy
+
+# 3. RECURSIVE ID3 ALGORITHM
+def id3(data, feature_names):
+    labels = [row[-1] for row in data]
+    
+    # Base Case 1: All instances have the same target class
+    if len(set(labels)) == 1:
+        return labels[0]
+    
+    # Base Case 2: No more features left to split
+    if len(feature_names) == 0:
+        return max(set(labels), key=labels.count)
+    
+    # Find the best feature with maximum Information Gain
+    gains = [calculate_info_gain(data, i) for i in range(len(feature_names))]
+    best_feature_idx = np.argmax(gains)
+    best_feature = feature_names[best_feature_idx]
+    
+    tree = {best_feature: {}}
+    
+    # Get unique values for the selected best feature
+    feature_vals = np.unique([row[best_feature_idx] for row in data])
+    
+    for val in feature_vals:
+        # Create subset where feature == val (and drop the split feature)
+        sub_data = [
+            row[:best_feature_idx] + row[best_feature_idx + 1:] 
+            for row in data if row[best_feature_idx] == val
+        ]
+        sub_features = feature_names[:best_feature_idx] + feature_names[best_feature_idx + 1:]
+        
+        # Recursively build subtree
+        tree[best_feature][val] = id3(sub_data, sub_features)
+        
+    return tree
+
+# 4. CLASSIFICATION FUNCTION FOR A NEW SAMPLE
+def classify(tree, sample, feature_names):
+    if not isinstance(tree, dict):
+        return tree
+    
+    root_node = next(iter(tree))
+    feature_idx = feature_names.index(root_node)
+    sample_val = sample[feature_idx]
+    
+    if sample_val in tree[root_node]:
+        return classify(tree[root_node][sample_val], sample, feature_names)
+    else:
+        return "Unknown"
+
+# 5. EXECUTE AND TEST
+print("--- ID3 DECISION TREE GENERATION ---")
+decision_tree = id3(dataset, features)
+
+print("\nConstructed Decision Tree Structure:")
+import pprint
+pprint.pprint(decision_tree)
+
+# Classify a new query sample
+new_sample = ['Sunny', 'Cool', 'High', 'Strong']
+result = classify(decision_tree, new_sample, features)
+
+print("\n------------------------------------")
+print(f"New Sample: {dict(zip(features, new_sample))}")
+print(f"Predicted Class (PlayTennis): {result}")
